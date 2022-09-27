@@ -1,0 +1,42 @@
+this.#packet = {
+            type: 'viewer',
+            device: this.#State.getState('device', 'deviceType'), 4
+            host: window.location.host, 30
+            timestamp: new Date().getTime() 4
+        }
+
+{"type":"viewer","device":"device","host":"http://location.com","timestamp":"20-06-07"}
+
+
+{"id":2,"pox":20,"poy":150,"poz":180,"roy":190}
+
+{id:20pox:20,poy:150,poz:20,roy:190}
+
+id : 0110100101100100 14bit
+pox : 011100000110111101111000 24bit
+poy : 011100000110111101111001 24bit
+poz : 011100000110111101111010 24bit
+roy : 011100100110111101111001 24bit
+
+
+id :  1011001,  7bit
+pox : 110010,  6bit
+poy : 10010110, 8bit
+poz : 10110100, 8bit
+roy : 10111110 8bit
+
+
+message : 
+ArrayBuffer {
+  [Uint8Contents]: <7b 0a 22 69 64 22 3a 32 2c 0a 22 70 6f 78 22 3a 32 30 2c 0a 22 70 6f 79 22 3a 31 35 30 2c 0a 22 70 6f 7a 22 3a 31 38 30 2c 0a 22 72 6f 79 22 3a 31 39 30 7d>,
+  byteLength: 52
+} false
+
+new Uint8Array :
+Uint8Array(52) [
+  123,  10,  34, 105, 100, 34, 58,  50, 44, 10,  34,
+  112, 111, 120,  34,  58, 50, 48,  44, 10, 34, 112,
+  111, 121,  34,  58,  49, 53, 48,  44, 10, 34, 112,
+  111, 122,  34,  58,  49, 56, 48,  44, 10, 34, 114,
+  111, 121,  34,  58,  49, 57, 48, 125
+]

@@ -1,0 +1,30 @@
+this.#packet = {
+            type: 'viewer',
+            device: this.#State.getState('device', 'deviceType'),
+            host: window.location.host,
+            timestamp: new Date().getTime()
+        }
+
+this.#packet = {
+            type: 'player',
+            id: this.#State.getState('user', 'id'), 4
+            device: this.#State.getState('device', 'deviceType'), 4
+            authority: this.#State.getState('user', 'authority'), 10
+            avatar: this.#State.getState('user', 'avatar'), 10
+            pox: this.#core.user.position.x, 4
+            poy: this.#core.user.position.y, 4
+            poz: this.#core.user.position.z, 4
+            roy: this.#makeRotationPacketData(this.#core.user.rotation), 4
+            state: this.#State.getState('user', 'state'), 10
+            host: window.location.host, 30
+            //area: area,
+            //collisionGroup: collisionGroup,
+            //activationState: activationState,
+            timestamp: new Date().getTime() 4
+        }
+
+
+open ={ device:'mobile', id: "join2", authority: "good2"  , avatar: "aweso"  state: "your4" }
+
+parseFloat(Math.random().toFixed(3))
+Math.floor(Math.random() * 1000) / 100
