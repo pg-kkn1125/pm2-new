@@ -35,6 +35,7 @@ const locations = new Array(locationCount).fill(0).map((e, i) => ({
   script: `src/workers/lo${i + 1}.js`, // 스크립트 파일 위치
   instances: 1, // 0 | "max" = CPU 코어 수 만큼 프로세스를 생성
   watch: ["./"],
+  wait_ready: true,
   ...statusOptions,
   ...watchOptions,
   ...envOptions,

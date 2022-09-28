@@ -7,18 +7,25 @@
 // 	  host: window.location.host,
 // 	  timestamp: new Date().getTime()
 //  }
-const Messanger = require("./model/MessageManager");
+// const Messanger = require("./model/MessageManager");
 const uws = require("uWebSockets.js");
-const { clusters } = require("./util/variables");
-const { convertResponseData, parseChannel } = require("./util/tools");
-const { cloudWs, cloudApp } = require("./workers/db");
+const {
+  convertResponseData,
+  parseChannel,
+  parseBinary,
+} = require("./util/tools");
+let { emitter } = require("./workers/db");
+const Packet = require("./model/Packet");
+// const MessageManager = require("./model/MessageManager");
+// const messanger = new MessageManager();
 
-const messanger = new Messanger();
+// const messanger = new Messanger();
 let isDisableKeepAlive = false;
 const sockets = new Map(); // 소켓 서버
 const players = new Map(); // 유저 정보 (위치 값 등)
 const viewers = new Map(); // 로그인 창 정보
 let params = "";
+let server = "";
 
 const app = uws
   .App({})
@@ -51,22 +58,27 @@ const app = uws
         ws.close();
       }
 
-      const decoder = new TextDecoder();
-
+      const { channel } = ws.params;
+      [th] = parseChannel(channel);
+      server = th;
       // deviceID++;
       // sockets.set(ws, deviceID);
       // ws.subscribe(String(deviceID));
-      ws.subscribe("server");
       // console.log(deviceID);
-      ws.send("서버 시작");
-      cloudWs.set("cloud", ws);
-      receiveOpen(ws); // open 시점에서 스레드로 송신
+      // ws.send("서버 시작");
+      // cloudApp = Object.assign(cloudApp, { cloud: app });
+      // cloudWs = Object.assign(cloudWs, { cloud: ws });
+      openSend(ws);
+      // messanger.openSend(ws);
+      // open 시점에서 스레드로 송신
     },
     message: handleMessage,
     drain(ws) {
       console.log("WebSocket backpressure: ", ws.getBufferedAmount());
     },
     close(ws, code, message) {
+      emitter.emit(server, ws, code, message);
+
       if (isDisableKeepAlive) {
         ws.unsubscribe(String(procId));
       }
@@ -80,35 +92,26 @@ const app = uws
     }
   });
 
+function openSend(ws) {
+  const [th] = parseChannel(ws.params.channel);
+  emitter.emit(
+    th,
+    app,
+    ws,
+    new Packet({
+      channel: ws.params.channel,
+      type: "viewer",
+    })
+  );
+}
+
 function handleMessage(ws, message, isBinary) {
-  const data = convertResponseData(message, isBinary);
-
-  // const json = JSON.parse(data);
-  // dev.log(json);
-  // players.delete(sockets.get(data.id));
-
-  // messanger.send(ws, data);
-  // messanger.save(data); // 추후 작업
-
-  // messageHandler(message, data, ws, isBinary);
+  const { params } = ws;
+  const { channel } = params;
+  const [th] = parseChannel(channel);
+  // console.log(message, isBinary);
+  emitter.emit(`${th}:message`, ws, message, isBinary);
 }
-
-function receiveOpen(ws) {
-  messanger.openSend(app, ws);
-  cloudApp.set("cloud", app);
-  cloudWs.set("cloud", ws);
-}
-
-// 클라이언트 요청을 socket message로 받아
-// sendMessage로 보내면 아래 메세지 이벤트로 받음
-process.on("message", (packet) => {
-  console.log("[RECEIVE] 받은 패킷: ", packet);
-
-  // app.publish(
-  //   players.get("uWS.WebSocket {}") || "main",
-  //   JSON.stringify(packet)
-  // );
-});
 
 // process dead
 process.on("SIGINT", function () {
@@ -118,4 +121,4 @@ process.on("SIGINT", function () {
   });
 });
 
-module.exports = app;
+module.exports = { app };

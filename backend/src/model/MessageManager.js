@@ -1,21 +1,19 @@
 const pm2 = require("pm2");
+const { app } = require("../server");
 const { parseChannel } = require("../util/tools");
+// const { cloudWs } = require("../workers/db");
 
 class MessageManager {
-  openSend(app, ws) {
-    const [thread] = parseChannel(ws.params.channel);
-    const packet = {
-      th: ws.params.channel,
-    };
-    this.send(thread, packet);
-  }
+  // openSend(ws) {
+  //   const [th] = parseChannel(ws.params.channel);
+  // }
+
   send(th, data) {
     // data 규격
     // {
     //   app: app,
     //   ws: ws,
     // }
-    console.log(data);
     console.log(`${th} 채널로 패킷을 보냅니다.`);
     pm2.list((err, list) => {
       if (err) {
@@ -40,6 +38,19 @@ class MessageManager {
     const { data } = packet;
     data.app.publish("server", data);
   }
+
+  // promiseGetCloud() {
+  //   return new Promise((resolve, reject) => {
+  //     // console.log(cloudWs);
+  //     if (cloudWs.hasOwnProperty("cloud")) {
+  //       setTimeout(() => {
+  //         resolve(cloudWs);
+  //       }, 1);
+  //     }
+  //   });
+  // }
+  // https://joshua1988.github.io/web-development/javascript/promise-for-beginners/ - promise 참조
+  // https://ko.javascript.info/promise-basics - promise 참조
 }
 
 module.exports = MessageManager;
