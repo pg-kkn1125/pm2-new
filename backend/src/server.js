@@ -20,6 +20,7 @@ const Packet = require("./model/Packet");
 // const messanger = new MessageManager();
 
 // const messanger = new Messanger();
+const PORT = 3000;
 let isDisableKeepAlive = false;
 const sockets = new Map(); // 소켓 서버
 const players = new Map(); // 유저 정보 (위치 값 등)
@@ -85,10 +86,10 @@ const app = uws
       params = "";
     },
   })
-  .listen(5000, (socket) => {
+  .listen(PORT, (socket) => {
     if (socket) {
       process.send("ready");
-      console.log(`server listening on ws://localhost:${5000}/*`);
+      console.log(`server listening on ws://localhost:${PORT}/*`);
     }
   });
 
@@ -110,7 +111,7 @@ function handleMessage(ws, message, isBinary) {
   const { channel } = params;
   const [th] = parseChannel(channel);
   // console.log(message, isBinary);
-  emitter.emit(`${th}:message`, ws, message, isBinary);
+  emitter.emit(`${th}:message`, app, ws, message, isBinary);
 }
 
 // process dead

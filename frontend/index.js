@@ -1,151 +1,176 @@
 // import Socket from "./model/Socket.js";
-/* 
- * @property {property} #protobuf protobuf library
- * @property {property} #Type Type in protobuf library
- * @property {property} #Field Field in protobuf library
- * @property {property} #socket 웹소켓 구조체
- * @property {property} #URL 내부망 websocket서버 접근 주소
- * @property {property} #externalURL 외부망 websocket서버 접근 주소
- * @property {property} #port websocket서버 포트
- * @property {property} #userID userID
- * @property {property} #isLogin isLogin / boolean / default = false
- * @property {property} #dispatcher 받은 패킷 활용 메소드 할당 구조체
- * @property {property} #build 패킷 전송 시마다 만들어지는 protobuf 개별 구조체
- * @property {property} #validator 유효성 검사 기준 오브젝트 보유 구조체
- * @property {property} #packet 패킷 전송 전 작성용
- * @property {property} #receivePacket 받은 패킷 저장용
- * @property {property} #roy location 패킷 작성 전 uint32로 재설정된 user avatar rotation.y 값
- *  */
-window.webkitLibraries = {
-  static: {
-    a4: protobuf,
-  },
-  MetaEngine: {
-    CustomMap: new Map([["socket", {}]]),
-    port: 5000,
-  },
-  State: {},
-};
+import protobuf from "protobufjs";
+import Socket from "./model/Socket";
+
+const viewerArray = [];
+let playerArray = [0];
+var good = false;
+var isPlayerSend = false;
+let value;
+
+var Type = protobuf.Type,
+  Field = protobuf.Field;
 
 let self;
 function ProtoBuf(properties) {
   // protobuf.Message.call(this, properties);
-  window.webkitLibraries.static.a4.Message.call(this, properties);
+  protobuf.Message.call(this, properties);
 }
+(ProtoBuf.prototype = Object.create(protobuf.Message)).constructor = ProtoBuf;
+
+//Field.d(1, "fixed32", "required")(ProtoBuf.prototype, "id")
+//Field.d(2, "bytes", "required")(ProtoBuf.prototype, "pos")
+//Field.d(3, "sfixed32", "required")(ProtoBuf.prototype, "angle")
+Field.d(1, "fixed32", "required")(ProtoBuf.prototype, "id");
+Field.d(2, "float", "required")(ProtoBuf.prototype, "pox");
+Field.d(3, "float", "required")(ProtoBuf.prototype, "poy");
+Field.d(4, "float", "required")(ProtoBuf.prototype, "poz");
+Field.d(5, "sfixed32", "required")(ProtoBuf.prototype, "roy");
 
 const HOST = "localhost";
-const PORT = 5000;
-const params = `lo1B`;
-let socket = new WebSocket(`ws://${HOST}:${PORT}/server?channel=${params}`);
-let count = 0;
-let connect = false;
-const encoder = new TextEncoder();
+const PORT = 3000;
+const sockets = new Map();
 
-const encodeData = (data) => {
-  const jsonData = JSON.stringify(data);
-  const binaryData = jsonData
-    .split("")
-    .map((json) => json.charCodeAt(0).toString(2));
-  return encoder.encode(binaryData);
+const generateConnections = () => {
+  for (let i = 0; i < 50; i++) {
+    sockets.set(
+      i,
+      new Socket("server", "lo1", i % 2 === 0 ? "A" : "B").connect(HOST, PORT)
+    );
+  }
 };
 
-const stringToBinary = (str) =>
-  str.split("").map((str) => str.charCodeAt(0).toString(32));
-
-const toBinary = (data) =>
-  stringToBinary(typeof data === "string" ? data : JSON.stringify(data));
-
-const handleOpen = (e) => {
-  connect = true;
-  el_result.innerHTML = "소켓이 연결되었습니다.";
-  el_result.classList.add("active");
-
-  const data = {
-    channel: params,
-    type: "player",
-  };
-
-  const binary = toBinary(data);
-  const encodeData = encoder.encode(binary);
-  // e.target.send(encodeData);
+const loginAll = () => {
+  for (let i = 0; i < sockets.size; i++) {
+    const socket = sockets.get(i);
+    try {
+      Socket.emit(socket, Socket.createPlayer(i));
+    } catch (e) {
+      let loop = setInterval(() => {
+        if (socket.readyState === 1) {
+          Socket.emit(socket, Socket.createPlayer(i));
+          clearInterval(loop);
+        }
+      }, 16);
+    }
+  }
 };
 
-const handleClose = () => {
-  connect = false;
-  retry();
-};
+generateConnections();
+// 이후 로그인 시도
+setTimeout(() => {
+  loginAll();
+  setTimeout(() => {
+    locationFunction();
+  }, 3000);
+}, 3000);
 
-const handleMessage = (message) => {
-  // console.log(el_result);
-  console.log(message);
-  el_result.innerHTML = message.data;
-};
+// function viewerFunction(i) {
+//   const viewerData = {
+//     type: "viewer",
+//     device: `android${i}`,
+//     host: "https://location.com",
+//     timestamp: "20220921",
+//   };
+//   sockets.get(i).getSocket().send(JSON.stringify(viewerData));
+// }
 
-const handleError = () => {
-  connect = false;
-  retry();
-};
+// function playFunction(i) {
+//   const playerData = {
+//     type: "player",
+//     id: `${i}`,
+//     device: "ios",
+//     authority: "host",
+//     avatar: "avatar1",
+//     pox: Math.floor(Math.random() * 1000) / 100,
+//     poy: 0,
+//     poz: Math.floor(Math.random() * 1000) / 100,
+//     roy: 5,
+//     state: "login",
+//     host: "https://localhost:3000",
+//     timestamp: "20220922",
+//   };
+//   sockets.get(i).getSocket().send(JSON.stringify(playerData));
+// }
 
-function setup() {
-  console.log(new Socket());
-  socket.onopen = handleOpen;
-  socket.onclose = handleClose;
-  socket.onmessage = handleMessage;
-  socket.onerror = handleError;
+function promiseGet(socket) {
+  return new Promise((resolve, reject) => {
+    if (socket.readyState === 1) {
+      resolve(socket);
+    }
+  });
 }
 
-function sendMessage() {
-  // const packet = {
-  //   type: "player",
-  //   channel: "lo1A",
-  //   id: 1,
-  //   pox: 123,
-  //   poy: 123,
-  //   poz: 123,
-  //   roy: 123,
-  // };
-  const result = new ProtoBuf({
-    id: 5,
-    pox: 123,
-    poy: 123,
-    poz: 123,
-    roy: 123,
-  });
-
-  const packet = ProtoBuf.encode(result).finish();
-  socket.send(packet);
-  // const encodeData = encoder.encode(makepacket());
-  // socket.send(encodeData);
+function locationFunction() {
+  setInterval(() => {
+    for (let i = 0; i < 50; i++) {
+      const pack = new ProtoBuf({
+        id: i,
+        pox: Math.floor(Math.random() * 1000) / 100,
+        poy: 0,
+        poz: Math.floor(Math.random() * 1000) / 100,
+        roy: 0,
+      });
+      value = ProtoBuf.encode(pack).finish();
+      promiseGet(sockets.get(i)).then((ws) => {
+        try {
+          ws.send(value);
+        } catch (error) {
+          if (error instanceof Error) {
+            // possibly still 'CONNECTING'
+            if (ws.readyState !== 1) {
+              var waitSend = setInterval(ws.send(value), 1000);
+            }
+          }
+        }
+      });
+    }
+  }, 16);
 }
 
 setTimeout(() => {
-  sendMessage();
-}, 1000);
+  // locationFunction();
+}, 3000);
 
-setup();
-
-function retry(e) {
-  console.log("다시 연결을 시도합니다.");
-  const data = {
-    from: "server",
-    signal: true,
-  };
-
-  el_result.classList.remove("active");
-
-  if (count < 10) {
-    count++;
-    try {
-      socket = new WebSocket(`ws://${HOST}:${PORT}/server`);
-    } catch (e) {
-      connect = false;
-    } finally {
-      if (!connect) {
-        // setTimeout(() => {
-        //   console.log(`재 연결 시도 : ${count}`);
-        //   retry();
-        // }, 1000);
-      }
-    }
-  }
-}
+// (async function example() {
+//   // let driver = await new Builder().forBrowser("chrome").build();
+//   try {
+//     for (let i = 1; i < 51; i++) {
+//       sockets.set(
+//         i,
+//         new Socket("server", "lo1", i % 2 === 0 ? "A" : "B").connect(HOST, PORT)
+//       );
+//       await sockets.get(i).getSocket();
+//       sockets.get(i).binaryType = "arraybuffer";
+//       sockets.get(i).onOpen((ws) => viewerFunction(i));
+//       viewerArray.push(i);
+//     }
+//   } catch (err) {
+//     console.log(err, 2);
+//   } finally {
+//     sockets.get(50).onMessage((message) => {
+//       console.log(message.data);
+//       if (isPlayerSend === false) {
+//         if (typeof message.data === "string") {
+//           let newData = JSON.parse(message.data);
+//           if (Object.values(newData)[0] !== undefined) {
+//             var newType = Object.values(newData)[0];
+//             if (newType.deviceID === 51) {
+//               for (let i = 1; i < 51; i++) {
+//                 playFunction(i);
+//                 isPlayerSend = true;
+//               }
+//             } else {
+//               return;
+//             }
+//           }
+//         } else {
+//           //console.log("good");
+//         }
+//       }
+//     });
+//     setTimeout(() => {
+//       locationFunction();
+//     }, 4000);
+//   }
+// });

@@ -51,16 +51,17 @@ emitter.on("lo1", (app, ws, data) => {
   } else {
     //
   }
-  console.log(`CH_1`, deviceIDCH_1);
-  console.log(`CH_2`, deviceIDCH_2);
+  console.log(`CH_1`, deviceIDCH_1, "viewer");
+  console.log(`CH_2`, deviceIDCH_2, "viewer");
 
   // 클라이언트 단일 응답
 });
 
 function initialSetupViewer(app, ws, data, deviceID) {
   const messageObject = { type: "viewer" };
-  sockets.set(ws, deviceIDCH_1);
-  ws.subscribe(String(deviceIDCH_1));
+  sockets.set(ws, deviceID);
+  ws.subscribe(String(deviceID));
+  ws.subscribe("server");
   ws.send(JSON.stringify(data));
   // 전체 클라이언트 응답
   app.publish(
@@ -89,8 +90,10 @@ function initialSetupViewer(app, ws, data, deviceID) {
   );
 }
 
-emitter.on("lo1:message", (ws, message, isBinary) => {
+emitter.on("lo1:message", (app, ws, message, isBinary) => {
   if (isBinary) {
+    // console.log(message);
+    // console.log("queue에 입력 함");
     locationQueue.enter(message);
     locationTmp = ProtoBuf.decode(new Uint8Array(message));
     if (players.has(locationTmp.id)) {
@@ -105,9 +108,11 @@ emitter.on("lo1:message", (ws, message, isBinary) => {
       });
     }
   } else {
-    messageString = decoder.decode(new Uint8Array(message));
-    messageObject = JSON.parse(messageString);
-    messageHandler(messageString, messageObject, ws, isBinary);
+    try {
+      messageString = decoder.decode(new Uint8Array(message));
+      messageObject = JSON.parse(messageString);
+    } catch (e) {}
+    messageHandler(messageString, messageObject, app, ws, isBinary);
   }
 });
 
@@ -131,7 +136,7 @@ emitter.on("close", (ws, code, message) => {
 
 process.send("ready");
 
-function messageHandler(messageString, messageObject, ws, isBinary) {
+function messageHandler(messageString, messageObject, app, ws, isBinary) {
   if (messageObject.type === "player") {
     players.set(
       sockets.get(ws),
@@ -139,7 +144,7 @@ function messageHandler(messageString, messageObject, ws, isBinary) {
     );
     viewers.delete(sockets.get(ws));
     ws.unsubscribe(String(sockets.get(ws)));
-
+    ws.subscribe(String(sockets.get(ws)));
     app.publish("server", JSON.stringify(Object.fromEntries(players)));
     console.log(
       "deviceID: " +
@@ -163,7 +168,9 @@ function messageHandler(messageString, messageObject, ws, isBinary) {
 }
 
 const sendLocation = setInterval(() => {
+  // console.log(locationQueue.count)
   if (locationQueue.count !== 0) {
+    console.log("로케이션 뿌림");
     app.publish("server", locationQueue.get(), true, true);
   }
 }, 8);
