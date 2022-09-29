@@ -4,7 +4,6 @@ function handleOpen(e) {
   el_result.classList.add("active");
 }
 function handleMessage(message) {
-  console.log(123)
   el_result.innerHTML = message.data;
 }
 function handleError() {}

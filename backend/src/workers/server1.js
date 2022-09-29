@@ -1,11 +1,13 @@
 // app을 require해야 데이터 업데이트가 공유되는 것으로 판단.
 // 데이터 변경을 수행한 파일을 require하지 않으면 공유되지 않음.
 
+let testCount = 0;
+
 const Queue3 = require("../queue/queue3.js");
 const { emitter } = require("./db");
 // ---------- protobuf js ------------
 const protobuf = require("protobufjs");
-const { app } = require("../server.js");
+const { app } = require("../app.js");
 var Type = protobuf.Type,
   Field = protobuf.Field;
 function ProtoBuf(properties) {
@@ -34,6 +36,8 @@ const locationQueue = new Queue3();
 const sockets = new Map();
 const viewers = new Map();
 const players = new Map();
+
+const USER_LIMIT_AMOUNT = 25;
 
 let deviceIDCH_1 = 0;
 let deviceIDCH_2 = 0;
@@ -170,7 +174,9 @@ function messageHandler(messageString, messageObject, app, ws, isBinary) {
 const sendLocation = setInterval(() => {
   // console.log(locationQueue.count)
   if (locationQueue.count !== 0) {
-    console.log("로케이션 뿌림");
+    testCount++;
+    console.log(testCount);
+    // console.log("로케이션 뿌림");
     app.publish("server", locationQueue.get(), true, true);
   }
 }, 8);

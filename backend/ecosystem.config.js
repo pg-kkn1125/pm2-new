@@ -29,10 +29,11 @@ const statusOptions = {
 };
 
 // location 서버 생성
-const locationCount = 1;
+const SERVER_NAME = "server";
+const locationCount = 2;
 const locations = new Array(locationCount).fill(0).map((e, i) => ({
-  name: `lo${i + 1}`, // 앱 이름
-  script: `src/workers/lo${i + 1}.js`, // 스크립트 파일 위치
+  name: `${SERVER_NAME}${i + 1}`, // 앱 이름
+  script: `src/workers/${SERVER_NAME}1.js`, // 스크립트 파일 위치
   instances: 1, // 0 | "max" = CPU 코어 수 만큼 프로세스를 생성
   // watch: ["./"],
   // wait_ready: true,
@@ -54,8 +55,8 @@ module.exports = {
     },
     ...locations,
     {
-      name: "server", // 앱 이름
-      script: "src/server.js", // 스크립트 파일 위치
+      name: "app", // 앱 이름
+      script: "src/app.js", // 스크립트 파일 위치
       instances: 1, // 0 | "max" = CPU 코어 수 만큼 프로세스를 생성
       // exec_mode: "cluster", // 애플리케이션을 클러스터 모드로 실행
       // watch: ["./"],

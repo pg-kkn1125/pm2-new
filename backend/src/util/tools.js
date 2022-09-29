@@ -1,3 +1,5 @@
+const pm2 = require("pm2");
+
 const getChunkByNumber = (data, number) => {
   return data.match(new RegExp(`.{1,${number}}`, "g"));
 };
@@ -54,9 +56,26 @@ const parseChannel = (query) =>
 //     this.events[type].forEach((listener) => listener(...args));
 //   }
 // };
+const resourceCheck = (serverName) => {
+  pm2.list((err, list) => {
+    list.forEach((server) => {
+      if (server.name === serverName) {
+        console.log(
+          `${server.name} CPU `,
+          server.monit.cpu / 1000000,
+          `MB`,
+          ` MEMORY `,
+          server.monit.memory / 1000000,
+          `MB`
+        );
+      }
+    });
+  });
+};
 
 module.exports = {
-  convertResponseData,
+  // convertResponseData,
   // parseBinary,
   parseChannel /* Emitter */,
+  resourceCheck,
 };

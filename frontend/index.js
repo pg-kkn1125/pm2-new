@@ -60,6 +60,7 @@ generateConnections();
 // 이후 로그인 시도
 setTimeout(() => {
   loginAll();
+  // 로케이션 데이터 전송 테스트
   setTimeout(() => {
     locationFunction();
   }, 3000);

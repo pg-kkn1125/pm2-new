@@ -7,17 +7,17 @@
 // 	  host: window.location.host,
 // 	  timestamp: new Date().getTime()
 //  }
-// const Messanger = require("./model/MessageManager");
 const uws = require("uWebSockets.js");
-const {
-  convertResponseData,
-  parseChannel,
-  parseBinary,
-} = require("./util/tools");
+const { parseChannel, resourceCheck } = require("./util/tools");
 let { emitter } = require("./workers/db");
 const Packet = require("./model/Packet");
-// const MessageManager = require("./model/MessageManager");
-// const messanger = new MessageManager();
+let linkServer = {
+  name: "server",
+  num: 1,
+  getLink() {
+    return this.name + this.num;
+  },
+};
 
 // const messanger = new Messanger();
 const PORT = 3000;
@@ -27,6 +27,12 @@ const players = new Map(); // 유저 정보 (위치 값 등)
 const viewers = new Map(); // 로그인 창 정보
 let params = "";
 let server = "";
+
+// setTimeout(() => {
+//   setInterval(() => {
+//     resourceCheck(linkServer.getLink());
+//   }, 16);
+// }, 2000);
 
 const app = uws
   .App({})
@@ -62,16 +68,9 @@ const app = uws
       const { channel } = ws.params;
       [th] = parseChannel(channel);
       server = th;
-      // deviceID++;
-      // sockets.set(ws, deviceID);
-      // ws.subscribe(String(deviceID));
-      // console.log(deviceID);
-      // ws.send("서버 시작");
-      // cloudApp = Object.assign(cloudApp, { cloud: app });
-      // cloudWs = Object.assign(cloudWs, { cloud: ws });
+
+      // 최초 연결 시 viewer type 메세지 전송
       openSend(ws);
-      // messanger.openSend(ws);
-      // open 시점에서 스레드로 송신
     },
     message: handleMessage,
     drain(ws) {
