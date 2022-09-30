@@ -8,6 +8,7 @@ const { emitter } = require("./db");
 // ---------- protobuf js ------------
 const protobuf = require("protobufjs");
 const { app } = require("../app.js");
+const { parseChannel } = require("../util/tools.js");
 var Type = protobuf.Type,
   Field = protobuf.Field;
 function ProtoBuf(properties) {
@@ -43,22 +44,17 @@ let deviceIDCH_1 = 0;
 let deviceIDCH_2 = 0;
 
 emitter.on("lo1", (app, ws, data) => {
-  // console.log("app", app);
-  // console.log("ws", ws);
-  // console.log("data", data);
+  const [th, ch] = parseChannel(ws.params.channel);
   if (data.channel === "A") {
     deviceIDCH_1++;
-    initialSetupViewer(app, ws, data, deviceIDCH_1);
+    initialSetupViewer(app, ws, data, ch + deviceIDCH_1);
   } else if (data.channel === "B") {
     deviceIDCH_2++;
-    initialSetupViewer(app, ws, data, deviceIDCH_2);
+    initialSetupViewer(app, ws, data, ch + deviceIDCH_2);
   } else {
-    //
   }
   console.log(`CH_1`, deviceIDCH_1, "viewer");
   console.log(`CH_2`, deviceIDCH_2, "viewer");
-
-  // 클라이언트 단일 응답
 });
 
 function initialSetupViewer(app, ws, data, deviceID) {
@@ -77,7 +73,6 @@ function initialSetupViewer(app, ws, data, deviceID) {
     Object.assign(messageObject, { deviceID: sockets.get(ws) })
   );
 
-  //clients.get(deviceID).send(JSON.stringify(new Array(players.get(deviceID))), isBinary)
   app.publish(
     String(sockets.get(ws)),
     JSON.stringify(new Array(viewers.get(sockets.get(ws))))
