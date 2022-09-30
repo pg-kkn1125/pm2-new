@@ -38,7 +38,7 @@ const sockets = new Map();
 const viewers = new Map();
 const players = new Map();
 
-const USER_LIMIT_AMOUNT = 25;
+const USER_LIMIT_AMOUNT = 50;
 
 let deviceIDCH_1 = 0;
 let deviceIDCH_2 = 0;
@@ -64,10 +64,12 @@ function initialSetupViewer(app, ws, data, deviceID) {
   ws.subscribe("server");
   ws.send(JSON.stringify(data));
   // 전체 클라이언트 응답
-  app.publish(
-    "server",
-    JSON.stringify(Object.assign(data, { from: "server" }))
-  );
+  // viewer는 다른 유저 및 사용자에게 보낼 데이터가 없음 +
+  // app.publish(
+  //   "server",
+  //   JSON.stringify(Object.assign(data, { from: "server" }))
+  // );
+
   viewers.set(
     sockets.get(ws),
     Object.assign(messageObject, { deviceID: sockets.get(ws) })
@@ -77,6 +79,7 @@ function initialSetupViewer(app, ws, data, deviceID) {
     String(sockets.get(ws)),
     JSON.stringify(new Array(viewers.get(sockets.get(ws))))
   );
+
   if (players.size > 0)
     app.publish("server", JSON.stringify(Object.fromEntries(players)));
 
