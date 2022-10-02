@@ -5,33 +5,18 @@ let testCount = 0;
 
 const Queue3 = require("../queue/queue3.js");
 const { emitter } = require("./db");
-// ---------- protobuf js ------------
-const protobuf = require("protobufjs");
 const { app } = require("../app.js");
 const { parseChannel } = require("../util/tools.js");
-var Type = protobuf.Type,
-  Field = protobuf.Field;
-function ProtoBuf(properties) {
-  protobuf.Message.call(this, properties);
-}
-(ProtoBuf.prototype = Object.create(protobuf.Message)).constructor = ProtoBuf;
+const Protobuf = require("../model/Protobuf.js");
 const decoder = new TextDecoder();
 
-//Field.d(1, "fixed32", "required")(ProtoBuf.prototype, "id")
-//Field.d(2, "bytes", "required")(ProtoBuf.prototype, "pos")
-//Field.d(3, "sfixed32", "required")(ProtoBuf.prototype, "angle")
-Field.d(1, "fixed32", "required")(ProtoBuf.prototype, "id");
-Field.d(2, "float", "required")(ProtoBuf.prototype, "pox");
-Field.d(3, "float", "required")(ProtoBuf.prototype, "poy");
-Field.d(4, "float", "required")(ProtoBuf.prototype, "poz");
-Field.d(5, "sfixed32", "required")(ProtoBuf.prototype, "roy");
 /*
 for(let i = 0; i < 5000; i++) {
     locationQueue.enter(`{"id":"tewtewt","pox":${i},"poy":${2.213124515},"poz":${1223.241421123123},"rox":${i},"roy":${2.213124515},"roz":${1223.241421123123}}`)
 }
 */
 
-var uint8array, messageString, messageObject, locationTmp;
+// var uint8array, messageString, messageObject, locationTmp;
 
 const locationQueue = new Queue3();
 const sockets = new Map();
@@ -89,29 +74,50 @@ function initialSetupViewer(app, ws, data, deviceID) {
   );
 }
 
-emitter.on("lo1:message", (app, ws, message, isBinary) => {
-  if (isBinary) {
-    // console.log(message);
-    // console.log("queue에 입력 함");
-    locationQueue.enter(message);
-    locationTmp = ProtoBuf.decode(new Uint8Array(message));
-    if (players.has(locationTmp.id)) {
-      Object.assign(players.get(locationTmp.id), {
-        pox: locationTmp.pox,
-        poy: locationTmp.poy,
-        poz: locationTmp.poz,
-        //rox: messageObject.rox,
-        roy: locationTmp.roy,
-        //roz: messageObject.roz,
-        //row: messageObject.row,
-      });
-    }
+emitter.on("lo1:message", (app, ws, messageString, messageObject) => {
+  stateQueue.enter(messageString);
+  Object.assign(players.get(messageObject.deviceID), messageObject);
+});
+
+emitter.on("lo1:player:insert", (app, ws, decodedData, message) => {
+  locationQueue.enter(message);
+  if (players.has(decodedData.id)) {
+    Object.assign(players.get(decodedData.id), {
+      pox: decodedData.pox,
+      poy: decodedData.poy,
+      poz: decodedData.poz,
+      //rox: messageObject.rox,
+      roy: decodedData.roy,
+      //roz: messageObject.roz,
+      //row: messageObject.row,
+    });
   } else {
-    try {
-      messageString = decoder.decode(new Uint8Array(message));
-      messageObject = JSON.parse(messageString);
-    } catch (e) {}
-    messageHandler(messageString, messageObject, app, ws, isBinary);
+    // player 등록
+    players.set(
+      sockets.get(ws),
+      Object.assign(decodedData, { deviceID: sockets.get(ws) })
+    );
+    // viewer 제거
+    viewers.delete(sockets.get(ws));
+    // viewer 구독 해제
+    ws.unsubscribe(String(sockets.get(ws)));
+    // player 구독
+    ws.subscribe(String(sockets.get(ws)));
+    // 전체 서버 사용자에 player 데이터 전송
+    app.publish("server", JSON.stringify(Object.fromEntries(players)));
+    console.log(
+      "deviceID: " +
+        decodedData.deviceID +
+        " has logined! to " +
+        decodedData.id +
+        "!!"
+    );
+    console.log(
+      "current connect players: " +
+        players.size +
+        " / current connect viewers: " +
+        viewers.size
+    );
   }
 });
 
@@ -133,39 +139,6 @@ emitter.on("close", (ws, code, message) => {
   );
 });
 
-process.send("ready");
-
-function messageHandler(messageString, messageObject, app, ws, isBinary) {
-  if (messageObject.type === "player") {
-    players.set(
-      sockets.get(ws),
-      Object.assign(messageObject, { deviceID: sockets.get(ws) })
-    );
-    viewers.delete(sockets.get(ws));
-    ws.unsubscribe(String(sockets.get(ws)));
-    ws.subscribe(String(sockets.get(ws)));
-    app.publish("server", JSON.stringify(Object.fromEntries(players)));
-    console.log(
-      "deviceID: " +
-        messageObject.deviceID +
-        " has logined! to " +
-        messageObject.id +
-        "!!"
-    );
-    console.log(
-      "current connect players: " +
-        players.size +
-        " / current connect viewers: " +
-        viewers.size
-    );
-  } else if (messageObject.type === "chat") {
-    chatQueue.enter(messageString);
-  } else if (messageObject.type === 4) {
-    stateQueue.enter(messageString);
-    Object.assign(players.get(messageObject.deviceID), messageObject);
-  }
-}
-
 const sendLocation = setInterval(() => {
   // console.log(locationQueue.count)
   if (locationQueue.count !== 0) {
@@ -177,12 +150,6 @@ const sendLocation = setInterval(() => {
 }, 8);
 
 /*
-setTimeout(() => 
-    const sendChat = setInterval(() => {
-        app.publish('server', chatQueue.get())
-    }, 16)
-}, 10)
-
 setTimeout(() => {
     const sendState = setInterval(() => {
         app.publish('server', stateQueue.get())
@@ -194,3 +161,6 @@ setTimeout(() => {
 setInterval(() => {
   app.publish("server", "");
 }, 55000);
+
+// pm2 process send a ready sign
+process.send("ready");

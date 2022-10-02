@@ -1,5 +1,6 @@
 // import Socket from "./model/Socket.js";
 import protobuf from "protobufjs";
+import Message from "./model/Protobuf";
 import Socket from "./model/Socket";
 
 const viewerArray = [];
@@ -8,38 +9,72 @@ var good = false;
 var isPlayerSend = false;
 let value;
 
-var Type = protobuf.Type,
-  Field = protobuf.Field;
-
-let self;
-function ProtoBuf(properties) {
-  // protobuf.Message.call(this, properties);
-  protobuf.Message.call(this, properties);
-}
-(ProtoBuf.prototype = Object.create(protobuf.Message)).constructor = ProtoBuf;
-
-//Field.d(1, "fixed32", "required")(ProtoBuf.prototype, "id")
-//Field.d(2, "bytes", "required")(ProtoBuf.prototype, "pos")
-//Field.d(3, "sfixed32", "required")(ProtoBuf.prototype, "angle")
-Field.d(1, "fixed32", "required")(ProtoBuf.prototype, "id");
-Field.d(2, "float", "required")(ProtoBuf.prototype, "pox");
-Field.d(3, "float", "required")(ProtoBuf.prototype, "poy");
-Field.d(4, "float", "required")(ProtoBuf.prototype, "poz");
-Field.d(5, "sfixed32", "required")(ProtoBuf.prototype, "roy");
-
 const HOST = "localhost";
 const PORT = 3000;
 const sockets = new Map();
 
+const declareProtobuf = new Message({
+  id: "fixed32",
+  // channel: "string",
+  type: "string",
+  device: "string",
+  authority: "bool",
+  avatar: "string",
+  pox: "float",
+  poy: "float",
+  poz: "float",
+  roy: "float",
+  state: "string",
+  host: "string",
+  timestamp: "fixed64",
+});
+
+const message = declareProtobuf.setMessage({
+  id: 1,
+  // channel: "lo1A",
+  type: "player",
+  device: "android",
+  authority: true,
+  avatar: "avatar_info",
+  pox: Math.ceil(Math.random() * 100),
+  poy: Math.ceil(Math.random() * 100),
+  poz: Math.ceil(Math.random() * 100),
+  roy: Math.random() * 10,
+  state: "online",
+  host: window.location.host,
+  timestamp: new Date().getTime(),
+});
+
+// console.log(message);
+const encoded = Message.encode(message).finish();
+// console.log(encoded);
+// console.log(Message.decode(encoded));
+
+const ws = new Socket("server", "lo1", "A", HOST, PORT).ws;
+setTimeout(() => {
+  if (ws.readyState === 1) {
+    // chat test
+    // ws.send('test data');
+
+    ws.send(encoded);
+  }
+}, 1000);
+
+/**
+ * 소켓 생성 및 커넥션 구성
+ */
 const generateConnections = () => {
   for (let i = 0; i < 50; i++) {
     sockets.set(
       i,
-      new Socket("server", "lo1", i % 2 === 0 ? "A" : "B").connect(HOST, PORT)
+      new Socket("server", "lo1", i % 2 === 0 ? "A" : "B", HOST, PORT).ws
     );
   }
 };
 
+/**
+ * 전체 로그인 테스트 (player 데이터 주입)
+ */
 const loginAll = () => {
   for (let i = 0; i < sockets.size; i++) {
     const socket = sockets.get(i);
@@ -56,43 +91,44 @@ const loginAll = () => {
   }
 };
 
-generateConnections();
+// generateConnections();
 // 이후 로그인 시도
 setTimeout(() => {
-  loginAll();
+  // loginAll();
   // 로케이션 데이터 전송 테스트
   // setTimeout(() => {
   //   locationFunction();
   // }, 3000);
 }, 3000);
 
-// function viewerFunction(i) {
-//   const viewerData = {
-//     type: "viewer",
-//     device: `android${i}`,
-//     host: "https://location.com",
-//     timestamp: "20220921",
-//   };
-//   sockets.get(i).getSocket().send(JSON.stringify(viewerData));
-// }
+function viewerFunction(i) {
+  const viewerData = {
+    type: "viewer",
+    device: `android${i}`,
+    host: "https://location.com",
+    timestamp: "20220921",
+  };
+  sockets.get(i).getSocket().send(JSON.stringify(viewerData));
+}
 
-// function playFunction(i) {
-//   const playerData = {
-//     type: "player",
-//     id: `${i}`,
-//     device: "ios",
-//     authority: "host",
-//     avatar: "avatar1",
-//     pox: Math.floor(Math.random() * 1000) / 100,
-//     poy: 0,
-//     poz: Math.floor(Math.random() * 1000) / 100,
-//     roy: 5,
-//     state: "login",
-//     host: "https://localhost:3000",
-//     timestamp: "20220922",
-//   };
-//   sockets.get(i).getSocket().send(JSON.stringify(playerData));
-// }
+function playFunction(i) {
+  const playerData = {
+    type: "player",
+    // channel: `lo1A`,
+    id: `${i}`,
+    device: "ios",
+    authority: "host",
+    avatar: "avatar1",
+    pox: Math.floor(Math.random() * 1000) / 100,
+    poy: 0,
+    poz: Math.floor(Math.random() * 1000) / 100,
+    roy: 5,
+    state: "login",
+    host: "https://localhost:3000",
+    timestamp: "20220922",
+  };
+  sockets.get(i).getSocket().send(JSON.stringify(playerData));
+}
 
 function promiseGet(socket) {
   return new Promise((resolve, reject) => {
@@ -128,50 +164,3 @@ function locationFunction() {
     }
   }, 16);
 }
-
-setTimeout(() => {
-  // locationFunction();
-}, 3000);
-
-// (async function example() {
-//   // let driver = await new Builder().forBrowser("chrome").build();
-//   try {
-//     for (let i = 1; i < 51; i++) {
-//       sockets.set(
-//         i,
-//         new Socket("server", "lo1", i % 2 === 0 ? "A" : "B").connect(HOST, PORT)
-//       );
-//       await sockets.get(i).getSocket();
-//       sockets.get(i).binaryType = "arraybuffer";
-//       sockets.get(i).onOpen((ws) => viewerFunction(i));
-//       viewerArray.push(i);
-//     }
-//   } catch (err) {
-//     console.log(err, 2);
-//   } finally {
-//     sockets.get(50).onMessage((message) => {
-//       console.log(message.data);
-//       if (isPlayerSend === false) {
-//         if (typeof message.data === "string") {
-//           let newData = JSON.parse(message.data);
-//           if (Object.values(newData)[0] !== undefined) {
-//             var newType = Object.values(newData)[0];
-//             if (newType.deviceID === 51) {
-//               for (let i = 1; i < 51; i++) {
-//                 playFunction(i);
-//                 isPlayerSend = true;
-//               }
-//             } else {
-//               return;
-//             }
-//           }
-//         } else {
-//           //console.log("good");
-//         }
-//       }
-//     });
-//     setTimeout(() => {
-//       locationFunction();
-//     }, 4000);
-//   }
-// });

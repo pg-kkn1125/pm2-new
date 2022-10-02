@@ -1,8 +1,15 @@
 const Queue2 = require("../queue/queue2.js");
+const { emitter } = require("./db.js");
 const chatQueue = new Queue2();
+const { app } = require("../app.js");
 
-const sendChat = setInterval(() => {
-  if (chatQueue.count !== 0) {
+emitter.on("chat:message", (app, ws, messageString) => {
+  console.log(messageString);
+  chatQueue.enter(messageString);
+});
+
+setTimeout(() => {
+  const sendChat = setInterval(() => {
     app.publish("server", chatQueue.get());
-  }
-}, 100);
+  }, 16);
+}, 10);

@@ -11,6 +11,27 @@ const uws = require("uWebSockets.js");
 const { parseChannel, resourceCheck } = require("./util/tools");
 let { emitter } = require("./workers/db");
 const Packet = require("./model/Packet");
+const Protobuf = require("./model/Protobuf");
+
+/**
+ * Protobuf declare
+ */
+const declareProtobuf = new Protobuf({
+  id: "fixed32",
+  // channel: "string",
+  type: "string",
+  device: "string",
+  authority: "bool",
+  avatar: "string",
+  pox: "float",
+  poy: "float",
+  poz: "float",
+  roy: "float",
+  state: "string",
+  host: "string",
+  timestamp: "fixed64",
+});
+
 let linkServer = {
   name: "server",
   num: 1,
@@ -28,6 +49,9 @@ const viewers = new Map(); // 로그인 창 정보
 let params = "";
 let server = "";
 
+/**
+ * 스레드 리소스 체크
+ */
 // setTimeout(() => {
 //   setInterval(() => {
 //     resourceCheck(linkServer.getLink());
@@ -109,8 +133,30 @@ function handleMessage(ws, message, isBinary) {
   const { params } = ws;
   const { channel } = params;
   const [th] = parseChannel(channel);
-  // console.log(message, isBinary);
-  emitter.emit(`${th}:message`, app, ws, message, isBinary);
+
+  const decoder = new TextDecoder();
+  if (isBinary) {
+    const decodedData = Protobuf.decode(new Uint8Array(message));
+    if (decodedData.type === "player") {
+      emitter.emit(`${th}:player:insert`, app, ws, decodedData, message);
+    } else {
+      // ...
+    }
+  } else {
+    const decodeMessage = decoder.decode(new Uint8Array(message));
+    if (decodeMessage.trim().startsWith("{")) {
+      const decodeMessageObject = JSON.parse(decodeMessage);
+      emitter.emit(
+        `${th}:message`,
+        app,
+        ws,
+        decodeMessage,
+        decodeMessageObject
+      );
+    } else {
+      emitter.emit("chat:message", app, ws, decodeMessage);
+    }
+  }
 }
 
 // process dead

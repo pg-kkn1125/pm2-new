@@ -4,7 +4,22 @@ function handleOpen(e) {
   el_result.classList.add("active");
 }
 function handleMessage(message) {
-  el_result.innerHTML = message.data;
+  if (typeof message.data === "string") {
+    el_result.innerHTML = message.data;
+  } else {
+    const reader = new FileReader();
+    // console.log(message);
+    try {
+      reader.readAsArrayBuffer(message.data.arrayBuffer);
+      reader.onload = (result) => {
+        const decoder = new TextDecoder();
+        const decodedData = decoder.decode(result.result);
+        // console.log(result);
+        // console.log(decodedData);
+        el_result.innerHTML = decodedData;
+      };
+    } catch (e) {}
+  }
 }
 function handleError() {}
 function handleClose() {}
@@ -17,10 +32,11 @@ class Socket {
   #connect = false;
   #uri;
   #count = 0;
-  constructor(name, server, channel) {
+  constructor(name, server, channel, host, port) {
     this.#name = name;
     this.#server = server;
     this.#channel = channel;
+    this.ws = this.connect(host, port);
   }
 
   connect(host, port) {
