@@ -25,10 +25,12 @@ class Channel {
     this.#ws.subscribe("server");
   }
 
-  deleteOrigin(deviceID) {
+  deleteOrigin(ws, deviceID) {
     // console.log(`삭제`, deviceID);
-    this.#ws.unsubscribe(String(deviceID));
-    this.findAndDelete(deviceID);
+    try {
+      this.#ws.unsubscribe(String(deviceID));
+      this.findAndDelete(deviceID);
+    } catch (e) {}
   }
 
   findAndDelete(deviceID) {

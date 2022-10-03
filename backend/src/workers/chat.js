@@ -1,7 +1,7 @@
-const Queue2 = require("../queue/queue2.js");
-const { emitter } = require("./db.js");
+const Queue2 = require("../queue/queue2");
+const { emitter } = require("../util/emitter");
 const chatQueue = new Queue2();
-const { app } = require("../app.js");
+const { app } = require("../app");
 
 emitter.on("chat:message", (app, ws, messageString) => {
   console.log(messageString);

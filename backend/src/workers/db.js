@@ -5,13 +5,6 @@
 // https://medium.com/@wdjty326/javascript-es6-map-vs-object-performance-%EB%B9%84%EA%B5%90-7f98e30bf6c8 - Map vs Object 성능 비교
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map - Map vs Object 성능 비교
 
-const EventEmitter = require("node:events");
-// https://www.huskyhoochu.com/nodejs-eventemitter/ - Emitter의 원리
-// https://blog.logrocket.com/how-build-custom-node-js-event-emitters/ - Emitter의 원리
-// https://stackoverflow.com/questions/12232500/custom-events-in-node-js-with-express-framework - Emitter 용법
-
-
-
 // proxy
 // cloudWs = new Proxy(cloudWs, {
 //   get(target, prop, receiver) {
@@ -34,5 +27,3 @@ const EventEmitter = require("node:events");
 //     return Reflect.set(target, prop, val, receiver); // (2)
 //   },
 // });
-
-module.exports = { /* cloudWs, cloudApp, sockets, */ emitter: new EventEmitter() };

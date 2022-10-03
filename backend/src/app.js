@@ -9,7 +9,7 @@
 //  }
 const uws = require("uWebSockets.js");
 const { parseChannel, resourceCheck } = require("./util/tools");
-let { emitter } = require("./workers/db");
+let { emitter } = require("./util/emitter");
 const Packet = require("./model/Packet");
 const Protobuf = require("./model/Protobuf");
 

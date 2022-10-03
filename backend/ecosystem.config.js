@@ -30,16 +30,20 @@ const statusOptions = {
 
 // location 서버 생성
 const SERVER_NAME = "server";
-const locationCount = 1;
+const locationCount = 9;
 const locations = new Array(locationCount).fill(0).map((e, i) => ({
   name: `${SERVER_NAME}${i + 1}`, // 앱 이름
-  script: `src/workers/${SERVER_NAME}1.js`, // 스크립트 파일 위치
+  script: `src/workers/${SERVER_NAME}.js`, // 스크립트 파일 위치
   instances: 1, // 0 | "max" = CPU 코어 수 만큼 프로세스를 생성
+  increment_var: "SERVER_COUNT",
   // watch: ["./"],
   // wait_ready: true,
   ...statusOptions,
   ...watchOptions,
-  ...envOptions,
+  ...{
+    ...envOptions,
+    env: { ...envOptions.env, SERVER_NAME: "server", SERVER_COUNT: i + 1 },
+  },
 }));
 
 module.exports = {
