@@ -57,6 +57,7 @@ let server = "";
 //     resourceCheck(linkServer.getLink());
 //   }, 16);
 // }, 2000);
+let deviceID = 0;
 
 const app = uws
   .App({})
@@ -101,7 +102,7 @@ const app = uws
       console.log("WebSocket backpressure: ", ws.getBufferedAmount());
     },
     close(ws, code, message) {
-      emitter.emit(server, ws, code, message);
+      emitter.emit(`${server}:close`, ws, code, message);
 
       if (isDisableKeepAlive) {
         ws.unsubscribe(String(procId));
@@ -125,8 +126,10 @@ function openSend(ws) {
     new Packet({
       channel: ws.params.channel,
       type: "viewer",
+      id: deviceID,
     })
   );
+  deviceID++;
 }
 
 function handleMessage(ws, message, isBinary) {

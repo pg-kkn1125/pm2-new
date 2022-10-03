@@ -39,7 +39,7 @@ const convertResponseData = (data, isBinary) => {
 // };
 
 const parseChannel = (query) =>
-  query.match(/(lo[0-9]+|chat|receive)([A-Z])/).slice(1, 3);
+  query.match(/(server[0-9]+|chat|receive)([A-Z])/).slice(1, 3);
 
 // function Emitter() {
 //   this.events = {};
