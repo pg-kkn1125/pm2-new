@@ -14,13 +14,6 @@ const HOST = "localhost";
 const PORT = 3000;
 const sockets = new Map();
 
-// const channel = new Channel();
-// for (let i = 0; i < 51; i++) {
-//   channel.addPlayer("a", { type: "player" });
-// }
-// channel.initialize({ app: "name" }, { ws: "name" });
-// channel.subscribe("a");
-
 const declareProtobuf = new Message({
   id: "fixed32",
   // channel: "string",
@@ -37,7 +30,7 @@ const declareProtobuf = new Message({
   timestamp: "fixed64",
 });
 
-const message = declareProtobuf.setMessage({
+const player = declareProtobuf.setMessage({
   id: 1,
   // channel: "lo1A",
   type: "player",
@@ -54,19 +47,21 @@ const message = declareProtobuf.setMessage({
 });
 
 // console.log(message);
-const encoded = Message.encode(message).finish();
+const encoded = Message.encode(player).finish();
 // console.log(encoded);
 // console.log(Message.decode(encoded));
 
-// const ws = new Socket("server", "lo1", "A", HOST, PORT).ws;
-// setTimeout(() => {
-//   if (ws.readyState === 1) {
-//     // chat test
-//     // ws.send('test data');
-
-//     ws.send(encoded);
-//   }
-// }, 1000);
+function connectOne() {
+  const ws = new Socket("server", "server1", "A", HOST, PORT).ws;
+  setTimeout(() => {
+    if (ws.readyState === 1) {
+      // chat test
+      // ws.send('test data');
+      ws.send(encoded);
+    }
+  }, 1000);
+}
+window.connectOne = connectOne;
 
 /**
  * 소켓 생성 및 커넥션 구성
@@ -81,14 +76,15 @@ const generateConnections = () => {
  * 전체 로그인 테스트 (player 데이터 주입)
  */
 const loginAll = () => {
-  for (let i = 0; i < sockets.size; i++) {
+  for (let i = 0; i < 75; i++) {
+    const encodedData = Message.encode(Socket.createPlayer(i)).finish();
     const socket = sockets.get(i);
     try {
-      Socket.emit(socket, Socket.createPlayer(i));
+      socket.send(encodedData);
     } catch (e) {
       let loop = setInterval(() => {
         if (socket.readyState === 1) {
-          Socket.emit(socket, Socket.createPlayer(i));
+          socket.send(encodedData);
           clearInterval(loop);
         }
       }, 16);

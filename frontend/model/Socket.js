@@ -95,7 +95,7 @@ Socket.createViewer = function (idx) {
 Socket.createPlayer = function (idx) {
   return {
     type: "player",
-    id: `${idx}`,
+    id: idx,
     device: "ios",
     authority: "host",
     avatar: "avatar1",

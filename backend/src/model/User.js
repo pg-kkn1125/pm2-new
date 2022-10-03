@@ -51,15 +51,37 @@ class User {
     if (type === "viewer") object = new Viewer(data);
     else if (type === "player") object = new Player(data);
 
-    this.set(object);
+    this.setData(object);
   }
 
-  set(data) {
+  setData(data) {
     this.clear();
     Object.entries(data).forEach(([key, value]) => {
       this[key] = value;
     });
     console.log(this);
+  }
+
+  setLocationData(data) {
+    this.pox = data.pox;
+    this.poy = data.poy;
+    this.poz = data.poz;
+    this.roy = data.roy;
+    this.rox = data.rox;
+    this.roz = data.roz;
+    this.row = data.row;
+  }
+
+  setDeviceID(deviceID) {
+    this.deviceID = deviceID;
+  }
+
+  setApp(app) {
+    this.app = app;
+  }
+
+  setWs(ws) {
+    this.ws = ws;
   }
 
   clear() {

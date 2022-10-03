@@ -43,9 +43,7 @@ let linkServer = {
 // const messanger = new Messanger();
 const PORT = 3000;
 let isDisableKeepAlive = false;
-const sockets = new Map(); // 소켓 서버
-const players = new Map(); // 유저 정보 (위치 값 등)
-const viewers = new Map(); // 로그인 창 정보
+
 let params = "";
 let server = "";
 
@@ -140,6 +138,8 @@ function handleMessage(ws, message, isBinary) {
   const decoder = new TextDecoder();
   if (isBinary) {
     const decodedData = Protobuf.decode(new Uint8Array(message));
+    Object.assign(decodedData, { deviceID: deviceID });
+    deviceID++;
     if (decodedData.type === "player") {
       emitter.emit(`${th}:player:insert`, app, ws, decodedData, message);
     } else {

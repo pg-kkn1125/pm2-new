@@ -30,7 +30,7 @@ const statusOptions = {
 
 // location 서버 생성
 const SERVER_NAME = "server";
-const locationCount = 2;
+const locationCount = 1;
 const locations = new Array(locationCount).fill(0).map((e, i) => ({
   name: `${SERVER_NAME}${i + 1}`, // 앱 이름
   script: `src/workers/${SERVER_NAME}1.js`, // 스크립트 파일 위치
