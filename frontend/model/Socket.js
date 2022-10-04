@@ -1,23 +1,77 @@
+"use strict";
+
+let users = [];
+
 // on event handlers
 function handleOpen(e) {
   el_result.innerHTML = "소켓이 연결되었습니다.";
   el_result.classList.add("active");
 }
+// function handleMessage(message) {
+//   if (typeof message.data === "string") {
+//     el_result.innerHTML = message.data;
+//   } else {
+//     const reader = new FileReader();
+//     // console.log(message);
+//     try {
+//       reader.readAsArrayBuffer(message.data.arrayBuffer);
+//       reader.onload = (result) => {
+//         const decoder = new TextDecoder();
+//         const decodedData = decoder.decode(result.result);
+//         // console.log(result);
+//         // console.log(decodedData);
+//         el_result.innerHTML = decodedData;
+//       };
+//     } catch (e) {}
+//   }
+// }
 function handleMessage(message) {
   if (typeof message.data === "string") {
-    el_result.innerHTML = message.data;
+    try {
+      const json = JSON.parse(message.data);
+      console.log("login data /", json);
+
+      const userList = Object.entries(json).map(([k, v]) => v);
+      if (userList[0] instanceof Array) {
+        users.push(...userList[0]);
+      } else {
+        const found = userList.find((list) => list.nickname === user.nickname);
+        if (found) {
+          user = found;
+        }
+
+        if (json.length < users.length) {
+          users = users.filter((us) =>
+            Boolean(json.find((js) => js.nickname === us.nickname))
+          );
+        } else {
+          users.push(...userList);
+        }
+      }
+      el_result.innerHTML = message.data;
+    } catch (e) {}
   } else {
     const reader = new FileReader();
-    // console.log(message);
     try {
-      reader.readAsArrayBuffer(message.data.arrayBuffer);
-      reader.onload = (result) => {
-        const decoder = new TextDecoder();
-        const decodedData = decoder.decode(result.result);
-        // console.log(result);
-        // console.log(decodedData);
-        el_result.innerHTML = decodedData;
-      };
+      const decoder = new TextDecoder();
+      const result = decoder.decode(message.data);
+      const jsonparsed = JSON.parse(result);
+
+      users = users.map((user) => {
+        if (user.nickname === jsonparsed.nickname) {
+          user = jsonparsed;
+        }
+        return user;
+      });
+
+      el_result.innerHTML = result;
+      // reader.onload = (result) => {
+      //   const decodedData = decoder.decode(result.result);
+      //   // console.log(result);
+      //   // console.log(decodedData);
+      //   el_result.innerHTML = decodedData;
+      //   console.log("binary", JSON.parse(decodedData));
+      // };
     } catch (e) {}
   }
 }
@@ -92,20 +146,21 @@ Socket.createViewer = function (idx) {
   };
 };
 
-Socket.createPlayer = function (idx) {
+Socket.createPlayer = function (idx, nickname) {
   return {
     type: "player",
     id: idx,
     device: "ios",
     authority: "host",
     avatar: "avatar1",
-    pox: Math.floor(Math.random() * 1000) / 100,
-    poy: 0,
-    poz: Math.floor(Math.random() * 1000) / 100,
+    pox: idx === 0 ? innerWidth / 2 : Math.random() * innerWidth,
+    poy: idx === 0 ? innerHeight / 2 : Math.random() * innerHeight,
+    poz: 0,
     roy: 5,
     state: "login",
     host: "https://localhost:3000",
     timestamp: "20220922",
+    ...(nickname && { nickname: nickname }),
   };
 };
 

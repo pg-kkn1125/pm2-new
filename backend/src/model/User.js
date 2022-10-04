@@ -15,7 +15,9 @@ class Viewer {
 
 class Player {
   type = null;
+  nickname = null;
   id = null;
+  deviceID = null;
   device = null;
   authority = null;
   avatar = null;
@@ -28,7 +30,9 @@ class Player {
   timestamp = null;
   constructor(data) {
     this.type = data.type;
+    this.nickname = data.nickname;
     this.id = data.id;
+    this.deviceID = data.deviceID;
     this.device = data.device;
     this.authority = data.authority;
     this.avatar = data.avatar;
@@ -47,6 +51,7 @@ class User {
   ws = null;
 
   constructor(type, data) {
+    // console.log("data", data);
     let object = null;
     if (type === "viewer") object = new Viewer(data);
     else if (type === "player") object = new Player(data);
@@ -59,7 +64,7 @@ class User {
     Object.entries(data).forEach(([key, value]) => {
       this[key] = value;
     });
-    console.log(this);
+    // console.log(this);
   }
 
   setLocationData(data) {

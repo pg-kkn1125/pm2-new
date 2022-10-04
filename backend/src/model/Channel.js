@@ -17,7 +17,7 @@ class Channel {
   initialize(app, ws, channel, deviceID) {
     this.#app = app;
     this.#ws = ws;
-    this.#channel = channel.toLowerCase();
+    this.#channel = channel;
     this.#deviceID = deviceID;
 
     this.#ws.subscribe(String(deviceID));
@@ -25,18 +25,19 @@ class Channel {
     this.#ws.subscribe("server");
   }
 
-  deleteOrigin(ws, deviceID) {
-    // console.log(`삭제`, deviceID);
+  deleteOrigin(deviceID) {
     try {
-      this.#ws.unsubscribe(String(deviceID));
       this.findAndDelete(deviceID);
     } catch (e) {}
   }
 
   findAndDelete(deviceID) {
+    // console.log("삭제하러 들어왔다");
     const found = this.findChannel(deviceID);
+    // console.log("close 때 확인", found);
     if (found) {
-      found.delete(deviceID);
+      found.delete(String(deviceID));
+      console.log(String(deviceID)+"번 사용자 삭-제!");
     }
   }
 
@@ -94,9 +95,16 @@ class Channel {
 
   changeUser(deviceID, data) {
     const found = this.getFindChannelByDeviceID(deviceID);
-
-    found.set(String(deviceID), data);
+    if (found) {
+      found.delete(String(found.deviceID));
+      found.set(String(deviceID), data);
+      this.#deviceID = deviceID;
+      // console.log("교체!", this.#deviceID);
+      // console.log("교체됨", found);
+    }
+    // console.log("replaced:", found);
     this.channelLog();
+    return deviceID;
   }
 
   convertObj(map) {
@@ -107,10 +115,11 @@ class Channel {
     return Object.entries(this.convertObj(map));
   }
 
-  getUserCountByType(type) {
+  getUserCountByType(channel, type) {
     const convertedEntries = (data) => this.convertEntries(data);
+    const target = this.#channels.get(channel);
 
-    return this.select().reduce(
+    return (channel ? target : this.select()).reduce(
       (acc, cur) =>
         (acc += convertedEntries(cur).reduce(
           (a, [key, value]) => (a += Number(value.type === type)),
@@ -120,34 +129,74 @@ class Channel {
     );
   }
 
-  closeOrigin(deviceID) {
+  closeOrigin(channel, deviceID) {
+    console.log(`close :: channel`, channel);
+    console.log(`close :: deviceID`, deviceID);
     this.deleteOrigin(deviceID);
-    // if (viewers.has(sockets.get(ws))) viewers.delete(sockets.get(ws));
-    this.#app.publish(
-      "server",
-      JSON.stringify(Object.fromEntries(this.findChannel(deviceID)))
-    );
 
-    // if (players.has(sockets.get(ws))) {
-    //   players.delete(sockets.get(ws));
-    //   app.publish("server", JSON.stringify(Object.fromEntries(players)));
-    // }
-
-    console.log(this.#deviceID + " exited!");
+    console.log(deviceID + " deleted!");
 
     this.channelLog();
   }
 
   channelLog() {
+    const channelList = Object.entries(Object.fromEntries(this.#channels));
+    const channelSizeList = Object.fromEntries(
+      channelList.map(([mainCh, subCh]) => [
+        mainCh,
+        subCh.reduce((acc, cur) => (acc += cur.size), 0),
+      ])
+    );
+    console.log(`channel sizes:`, channelSizeList);
     console.log(
-      `channels`,
+      `channel ${this.#channel}:`,
       this.select().map((ch) => ch.size)
     );
     console.log(
-      `viewer: `,
-      this.getUserCountByType("viewer"),
-      ` / player:`,
-      this.getUserCountByType("player")
+      `channel ${this.#channel}: viewer:`,
+      this.getUserCountByType(null, "viewer"),
+      `/ player:`,
+      this.getUserCountByType(null, "player")
+    );
+    console.log(
+      `ch a viewer:`,
+      this.getUserCountByType("a", "viewer"),
+      `/ ch a player:`,
+      this.getUserCountByType("a", "player")
+    );
+    console.log(
+      `ch b viewer:`,
+      this.getUserCountByType("b", "viewer"),
+      `/ ch b player:`,
+      this.getUserCountByType("b", "player")
+    );
+    console.log(
+      `ch c viewer:`,
+      this.getUserCountByType("c", "viewer"),
+      `/ ch c player:`,
+      this.getUserCountByType("c", "player")
+    );
+    console.log(
+      `ch d viewer:`,
+      this.getUserCountByType("d", "viewer"),
+      `/ ch d player:`,
+      this.getUserCountByType("d", "player")
+    );
+    console.log(
+      `ch e viewer:`,
+      this.getUserCountByType("e", "viewer"),
+      `/ ch e player:`,
+      this.getUserCountByType("e", "player")
+    );
+  }
+
+  getUserList() {
+    return (
+      this.#channels
+        .get(this.#channel)
+        ?.map((ch) => Object.entries(Object.fromEntries(ch)).map(([k, v]) => v))
+        .flat(2)
+        .filter((user) => user.type === "player") || []
     );
   }
 }

@@ -10,7 +10,8 @@
       html,
       body {
         margin: auto;
-        width: 70%;
+        width: 100%;
+        height: 100%;
       }
       #el_result {
         padding: 2rem;
@@ -18,16 +19,36 @@
       }
       #el_result.active {
         border: 5px solid green;
+        overflow: hidden;
+      }
+      #box {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+      }
+      canvas {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+      }
+      .disable {
+        display: none;
       }
     </style>
     <title>TRY6 TEST</title>
   </head>
   <body>
-    <h1>TRY6 TEST</h1>
-    <p>출력</p>
-    <button onclick="connectOne()">connect one</button>
-    <button onclick="start()">start</button>
-    <p id="el_result"></p>
+    <div id="box">
+      <button onclick="connectOne()">connect one</button>
+      <button onclick="start()">start</button>
+      <p id="el_result"></p>
+    </div>
+    <canvas id="canvas" style="z-index: 1000;"></canvas>
+    <!-- <script src="module.three.js" type="module"></script> -->
     <script src="index.js" type="module"></script>
+    <div id="loginboard" style="position: absolute; top: 50%; left: 50%; z-index: 1050;"></div>
   </body>
 </html>

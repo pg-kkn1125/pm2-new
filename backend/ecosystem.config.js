@@ -1,7 +1,7 @@
 const envOptions = {
   env: {
     // 실행 시 환경 변수 설정
-    HOST: "localhost",
+    HOST: "0.0.0.0",
     PORT: 3000,
   },
   env_production: {
@@ -30,7 +30,7 @@ const statusOptions = {
 
 // location 서버 생성
 const SERVER_NAME = "server";
-const locationCount = 9;
+const locationCount = 1;
 const locations = new Array(locationCount).fill(0).map((e, i) => ({
   name: `${SERVER_NAME}${i + 1}`, // 앱 이름
   script: `src/workers/${SERVER_NAME}.js`, // 스크립트 파일 위치

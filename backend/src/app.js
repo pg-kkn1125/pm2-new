@@ -19,6 +19,7 @@ const Protobuf = require("./model/Protobuf");
 const declareProtobuf = new Protobuf({
   id: "fixed32",
   // channel: "string",
+  nickname: "string",
   type: "string",
   device: "string",
   authority: "bool",
@@ -102,9 +103,9 @@ const app = uws
     close(ws, code, message) {
       emitter.emit(`${server}:close`, ws, code, message);
 
-      if (isDisableKeepAlive) {
-        ws.unsubscribe(String(procId));
-      }
+      // if (isDisableKeepAlive) {
+      //   ws.unsubscribe(String(procId));
+      // }
       params = "";
     },
   })
@@ -138,6 +139,7 @@ function handleMessage(ws, message, isBinary) {
   const decoder = new TextDecoder();
   if (isBinary) {
     const decodedData = Protobuf.decode(new Uint8Array(message));
+
     Object.assign(decodedData, { deviceID: deviceID });
     deviceID++;
     if (decodedData.type === "player") {
@@ -149,13 +151,8 @@ function handleMessage(ws, message, isBinary) {
     const decodeMessage = decoder.decode(new Uint8Array(message));
     if (decodeMessage.trim().startsWith("{")) {
       const decodeMessageObject = JSON.parse(decodeMessage);
-      emitter.emit(
-        `${th}:message`,
-        app,
-        ws,
-        decodeMessage,
-        decodeMessageObject
-      );
+      Object.assign(decodeMessageObject, { deviceID: deviceID });
+      emitter.emit(`${th}:message`, app, ws, decodeMessageObject, message);
     } else {
       emitter.emit("chat:message", app, ws, decodeMessage);
     }
