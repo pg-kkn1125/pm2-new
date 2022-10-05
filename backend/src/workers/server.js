@@ -61,7 +61,7 @@ emitter.on(
   `${SERVER_NAME + SERVER_COUNT}:message`,
   (app, ws, messageObject, message) => {
     // console.log("message", sockets.get(ws));
-    // console.log("message");
+    console.log("message");
     locationQueue.enter(message);
     const [th, ch] = parseChannel(ws.params.channel);
 
@@ -118,21 +118,21 @@ const sendLocation = setInterval(() => {
   // console.log(locationQueue.count)
   if (locationQueue.count !== 0) {
     // console.log("로케이션 뿌림");
-    app.publish("server", locationQueue.get(), true, true);
+    app.publish(userChannel, locationQueue.get(), true, true);
   }
 }, 8);
 
 setTimeout(() => {
   const sendState = setInterval(() => {
     if (stateQueue.count !== 0) {
-      app.publish("server", stateQueue.get());
+      app.publish(userChannel, stateQueue.get());
     }
   }, 16);
 }, 14);
 
 //ping
 setInterval(() => {
-  app.publish("server", "");
+  app.publish(userChannel, "");
 }, 55000);
 
 // pm2 process send a ready sign

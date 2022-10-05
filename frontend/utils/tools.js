@@ -14,4 +14,6 @@ const stringToBinary = (str) =>
 const toBinary = (data) =>
   stringToBinary(typeof data === "string" ? data : JSON.stringify(data));
 
-export { encodeData, stringToBinary, toBinary };
+const users = [];
+
+export { encodeData, stringToBinary, toBinary, users };

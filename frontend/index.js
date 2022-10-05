@@ -16,6 +16,7 @@ const HOST = "localhost";
 const PORT = 3000;
 const sockets = new Map();
 let users = [];
+let TEST_COUNT = 250;
 
 const declareProtobuf = new Message({
   id: "fixed32",
@@ -61,10 +62,15 @@ function handleClose() {}
 
 let viewer = false;
 
-function connectOne() {
+function connectOne(i) {
   viewer = true;
-  ws = new WebSocket(`ws://localhost:3000/server?channel=server1A`);
-  ws.binaryType = "arraybuffer";
+  ws = new WebSocket(
+    `ws://localhost:3000/server?channel=server1${String.fromCharCode(
+      65 + parseInt((i || 0) / 50)
+    ).toUpperCase()}`
+  );
+  sockets.set(i || 0, ws);
+  sockets.get(i || 0).binaryType = "arraybuffer";
   // setTimeout(() => {
   //   if (ws.readyState === 1) {
   //     // chat test
@@ -73,12 +79,12 @@ function connectOne() {
   //   }
   // }, 1000);
 
-  ws.onopen = (e) => {
+  sockets.get(i || 0).onopen = (e) => {
     el_result.innerHTML = "소켓이 연결되었습니다.";
     el_result.classList.add("active");
   };
 
-  ws.onmessage = (message) => {
+  sockets.get(i || 0).onmessage = (message) => {
     if (typeof message.data === "string") {
       try {
         const json = JSON.parse(message.data);
@@ -88,12 +94,12 @@ function connectOne() {
         if (userList[0] instanceof Array) {
           users.push(...userList[0]);
         } else {
-          const found = userList.find(
-            (list) => list.nickname === user.nickname
+          const found = userList.map((list) =>
+            list.nickname === user.nickname ? Object.assign(list, user) : list
           );
-          if (found) {
-            user = found;
-          }
+          // if (found) {
+          //   user = found;
+          // }
 
           if (json.length < users.length) {
             users = users.filter((us) =>
@@ -103,7 +109,7 @@ function connectOne() {
             users.push(...userList);
           }
         }
-        el_result.innerHTML = message.data;
+        // el_result.innerHTML = message.data;
       } catch (e) {}
     } else {
       const reader = new FileReader();
@@ -113,13 +119,19 @@ function connectOne() {
         const jsonparsed = JSON.parse(result);
 
         users = users.map((user) => {
-          if (user.nickname === jsonparsed.nickname) {
-            user = jsonparsed;
+          if (user.id === 0) {
+            if (user.nickname === jsonparsed.nickname) {
+              user = jsonparsed;
+            }
+          } else {
+            if (user.id === jsonparsed.id) {
+              user = jsonparsed;
+            }
           }
           return user;
         });
 
-        el_result.innerHTML = result;
+        // el_result.innerHTML = result;
         // reader.onload = (result) => {
         //   const decodedData = decoder.decode(result.result);
         //   // console.log(result);
@@ -130,15 +142,18 @@ function connectOne() {
       } catch (e) {}
     }
   };
-  ws.onerror = handleError;
-  ws.onclose = handleClose;
-
-  loginboard.innerHTML = `<input id="nickname" type="text" placeholder="nickname" /><button onclick="login()">login</button>`;
+  sockets.get(i || 0).onerror = handleError;
+  sockets.get(i || 0).onclose = handleClose;
+  if (i >= 1) {
+  } else {
+    loginboard.innerHTML = `<input id="nickname" type="text" placeholder="nickname" /><button onclick="login()">login</button>`;
+  }
 }
 
-window.onload = () => {
+window.addEventListener("load", () => {
   connectOne();
-};
+  window.login = login;
+});
 let idx = 0;
 let user = Socket.createPlayer(idx);
 function login() {
@@ -155,14 +170,13 @@ function login() {
   loginboard.classList.add("disable");
 }
 
-window.login = login;
-
 /**
  * 소켓 생성 및 커넥션 구성
  */
 const generateConnections = () => {
-  for (let i = 1; i <= 75; i++) {
-    sockets.set(i, new Socket("server", "server1", "A", HOST, PORT).ws);
+  for (let i = 1; i <= TEST_COUNT; i++) {
+    // sockets.set(i, new Socket("server", "server1", "A", HOST, PORT).ws);
+    connectOne(i);
   }
 };
 
@@ -170,25 +184,27 @@ const generateConnections = () => {
  * 전체 로그인 테스트 (player 데이터 주입)
  */
 const loginAll = () => {
-  for (let i = 1; i <= 75; i++) {
+  for (let i = 1; i <= TEST_COUNT; i++) {
+    const player = Socket.createPlayer(i);
+    // users.push(player);
     const encodedData = Message.encode(
-      declareProtobuf.setMessage(Socket.createPlayer(i))
+      declareProtobuf.setMessage(player)
     ).finish();
     const socket = sockets.get(i);
     try {
       socket.send(encodedData);
     } catch (e) {
-      let loop = setInterval(() => {
-        if (socket.readyState === 1) {
-          socket.send(encodedData);
-          clearInterval(loop);
-        }
-      }, 16);
+      // let loop = setInterval(() => {
+      //   if (socket.readyState === 1) {
+      //     socket.send(encodedData);
+      //     clearInterval(loop);
+      //   }
+      // }, 16);
     }
   }
 };
 
-function start() {
+function start(i) {
   generateConnections();
   // 이후 로그인 시도
   setTimeout(() => {
@@ -197,10 +213,29 @@ function start() {
     // setTimeout(() => {
     //   locationFunction();
     // }, 3000);
-  }, 10000);
+    let itv = 0;
+    console.log(users);
+    setTimeout(() => {
+      setInterval(() => {
+        if (itv % 74 === 0) itv = 0;
+        sockets.get(itv + 1)?.send(
+          JSON.stringify(
+            Object.assign(users[itv], {
+              pox: position.x * Math.random() * 2,
+              poy: position.y * Math.random() * 2,
+            })
+          )
+        );
+        itv++;
+      }, 8);
+    }, 1000);
+  }, 20000);
 }
-// window.start = start;
+window.start = start;
 // start();
+window.addEventListener("load", () => {
+  // start()
+});
 
 function locationFunction() {
   setInterval(() => {
@@ -310,17 +345,6 @@ window.addEventListener("blur", () => {
   active.d = false;
 });
 
-class User {
-  x = 0;
-  y = 0;
-
-  constructor(data) {
-    Object.entries(data).forEach(([key, value]) => {
-      this[key] = value;
-    });
-  }
-}
-
 let position = {
   x: canvas.clientWidth / 2,
   y: canvas.clientHeight / 2,
@@ -367,7 +391,7 @@ function animate() {
         position.x += SPEED;
       }
       // console.log("move");
-      ws?.send(
+      ws?.send?.(
         JSON.stringify(
           Object.assign(user, {
             pox: position.x,
@@ -390,3 +414,5 @@ function animate() {
   requestAnimationFrame(animate);
 }
 requestAnimationFrame(animate);
+
+export default users;

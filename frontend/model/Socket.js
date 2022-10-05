@@ -35,10 +35,10 @@ function handleMessage(message) {
       if (userList[0] instanceof Array) {
         users.push(...userList[0]);
       } else {
-        const found = userList.find((list) => list.nickname === user.nickname);
-        if (found) {
-          user = found;
-        }
+        // const found = userList.find((list) => list.nickname === user.nickname);
+        // if (found) {
+        //   user = found;
+        // }
 
         if (json.length < users.length) {
           users = users.filter((us) =>
@@ -49,7 +49,9 @@ function handleMessage(message) {
         }
       }
       el_result.innerHTML = message.data;
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
   } else {
     const reader = new FileReader();
     try {

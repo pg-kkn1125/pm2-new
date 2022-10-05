@@ -137,6 +137,7 @@ function handleMessage(ws, message, isBinary) {
   const [th] = parseChannel(channel);
 
   const decoder = new TextDecoder();
+  console.log(message)
   if (isBinary) {
     const decodedData = Protobuf.decode(new Uint8Array(message));
 
