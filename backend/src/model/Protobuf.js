@@ -35,7 +35,7 @@ class Protobuf {
 
   setMessage(properties) {
     this.#message = new protobuf.Message(properties);
-    return this;
+    return this.#message;
   }
 }
 

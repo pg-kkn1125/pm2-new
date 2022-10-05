@@ -16,6 +16,7 @@ const HOST = "localhost";
 const PORT = 3000;
 const sockets = new Map();
 let users = [];
+let TEST_COUNT = 250;
 
 const declareProtobuf = new Message({
   id: "fixed32",
@@ -61,10 +62,17 @@ function handleClose() {}
 
 let viewer = false;
 
-function connectOne() {
+function connectOne(i) {
   viewer = true;
-  ws = new WebSocket(`ws://localhost:3000/server?channel=server1A`);
-  ws.binaryType = "arraybuffer";
+  const parameters = location.search
+    .slice(1)
+    .split("&")
+    .filter((p) => p)
+    .map((p) => p.split("="));
+  const params = Object.fromEntries(parameters);
+  ws = new WebSocket(`ws://localhost:3000/server?channel=server1${params.ch}`);
+  sockets.set(i || 0, ws);
+  sockets.get(i || 0).binaryType = "arraybuffer";
   // setTimeout(() => {
   //   if (ws.readyState === 1) {
   //     // chat test
@@ -73,12 +81,12 @@ function connectOne() {
   //   }
   // }, 1000);
 
-  ws.onopen = (e) => {
+  sockets.get(i || 0).onopen = (e) => {
     el_result.innerHTML = "소켓이 연결되었습니다.";
     el_result.classList.add("active");
   };
 
-  ws.onmessage = (message) => {
+  sockets.get(i || 0).onmessage = (message) => {
     if (typeof message.data === "string") {
       try {
         const json = JSON.parse(message.data);
@@ -88,12 +96,12 @@ function connectOne() {
         if (userList[0] instanceof Array) {
           users.push(...userList[0]);
         } else {
-          const found = userList.find(
-            (list) => list.nickname === user.nickname
+          const found = userList.map((list) =>
+            list.nickname === user.nickname ? Object.assign(list, user) : list
           );
-          if (found) {
-            user = found;
-          }
+          // if (found) {
+          //   user = found;
+          // }
 
           if (json.length < users.length) {
             users = users.filter((us) =>
@@ -103,42 +111,69 @@ function connectOne() {
             users.push(...userList);
           }
         }
-        el_result.innerHTML = message.data;
-      } catch (e) {}
+        // el_result.innerHTML = message.data;
+      } catch (e) {
+        // console.log(e)
+      }
     } else {
-      const reader = new FileReader();
       try {
-        const decoder = new TextDecoder();
-        const result = decoder.decode(message.data);
-        const jsonparsed = JSON.parse(result);
+        if (message.data instanceof Blob) {
+          const reader = new FileReader();
+          reader.onload = (result) => {
+            const decodedData = decoder.decode(result.result);
+            // console.log(result);
+            // console.log(decodedData);
+            el_result.innerHTML = decodedData;
+            console.log("binary", JSON.parse(decodedData));
+          };
+        } else {
+          const decoder = new TextDecoder();
+          const result = decoder.decode(message.data);
+          // console.log(result.match(/\}/));
 
-        users = users.map((user) => {
-          if (user.nickname === jsonparsed.nickname) {
-            user = jsonparsed;
+          if (result.match(/\}/) && result.split(/\}/).length > 1) {
+            const multiline = result
+              .split(/\}/)
+              .filter((re) => re)
+              .map((re) => JSON.parse(re + "}"));
+
+            users = multiline;
+            // console.log(users)
+          } else {
+            const jsonparsed = JSON.parse(result);
+            users = users.map((user) => {
+              if (user.id === 0) {
+                if (user.nickname === jsonparsed.nickname) {
+                  user = jsonparsed;
+                }
+              } else {
+                if (user.id === jsonparsed.id) {
+                  user = jsonparsed;
+                }
+              }
+              return user;
+            });
           }
-          return user;
-        });
+        }
 
-        el_result.innerHTML = result;
-        // reader.onload = (result) => {
-        //   const decodedData = decoder.decode(result.result);
-        //   // console.log(result);
-        //   // console.log(decodedData);
-        //   el_result.innerHTML = decodedData;
-        //   console.log("binary", JSON.parse(decodedData));
-        // };
-      } catch (e) {}
+        // el_result.innerHTML = result;
+      } catch (e) {
+        console.log(e);
+      }
     }
   };
-  ws.onerror = handleError;
-  ws.onclose = handleClose;
-
-  loginboard.innerHTML = `<input id="nickname" type="text" placeholder="nickname" /><button onclick="login()">login</button>`;
+  sockets.get(i || 0).onerror = handleError;
+  sockets.get(i || 0).onclose = handleClose;
+  if (i >= 1) {
+  } else {
+    loginboard.innerHTML = `<input id="nickname" type="text" placeholder="nickname" /><button onclick="login()">login</button>`;
+  }
 }
 
-window.onload = () => {
+window.addEventListener("load", () => {
   connectOne();
-};
+  window.login = login;
+});
 let idx = 0;
 let user = Socket.createPlayer(idx);
 function login() {
@@ -155,14 +190,13 @@ function login() {
   loginboard.classList.add("disable");
 }
 
-window.login = login;
-
 /**
  * 소켓 생성 및 커넥션 구성
  */
 const generateConnections = () => {
-  for (let i = 1; i <= 75; i++) {
-    sockets.set(i, new Socket("server", "server1", "A", HOST, PORT).ws);
+  for (let i = 1; i <= TEST_COUNT; i++) {
+    // sockets.set(i, new Socket("server", "server1", "A", HOST, PORT).ws);
+    connectOne(i);
   }
 };
 
@@ -170,25 +204,27 @@ const generateConnections = () => {
  * 전체 로그인 테스트 (player 데이터 주입)
  */
 const loginAll = () => {
-  for (let i = 1; i <= 75; i++) {
+  for (let i = 1; i <= TEST_COUNT; i++) {
+    const player = Socket.createPlayer(i);
+    // users.push(player);
     const encodedData = Message.encode(
-      declareProtobuf.setMessage(Socket.createPlayer(i))
+      declareProtobuf.setMessage(player)
     ).finish();
     const socket = sockets.get(i);
     try {
       socket.send(encodedData);
     } catch (e) {
-      let loop = setInterval(() => {
-        if (socket.readyState === 1) {
-          socket.send(encodedData);
-          clearInterval(loop);
-        }
-      }, 16);
+      // let loop = setInterval(() => {
+      //   if (socket.readyState === 1) {
+      //     socket.send(encodedData);
+      //     clearInterval(loop);
+      //   }
+      // }, 16);
     }
   }
 };
 
-function start() {
+function start(i) {
   generateConnections();
   // 이후 로그인 시도
   setTimeout(() => {
@@ -197,10 +233,29 @@ function start() {
     // setTimeout(() => {
     //   locationFunction();
     // }, 3000);
-  }, 10000);
+    let itv = 0;
+    console.log(users);
+    setTimeout(() => {
+      setInterval(() => {
+        if (itv % 74 === 0) itv = 0;
+        sockets.get(itv + 1)?.send(
+          JSON.stringify(
+            Object.assign(users[itv], {
+              pox: position.x * Math.random() * 2,
+              poy: position.y * Math.random() * 2,
+            })
+          )
+        );
+        itv++;
+      }, 8);
+    }, 1000);
+  }, 20000);
 }
-// window.start = start;
+window.start = start;
 // start();
+window.addEventListener("load", () => {
+  // start()
+});
 
 function locationFunction() {
   setInterval(() => {
@@ -310,17 +365,6 @@ window.addEventListener("blur", () => {
   active.d = false;
 });
 
-class User {
-  x = 0;
-  y = 0;
-
-  constructor(data) {
-    Object.entries(data).forEach(([key, value]) => {
-      this[key] = value;
-    });
-  }
-}
-
 let position = {
   x: canvas.clientWidth / 2,
   y: canvas.clientHeight / 2,
@@ -367,7 +411,7 @@ function animate() {
         position.x += SPEED;
       }
       // console.log("move");
-      ws?.send(
+      ws?.send?.(
         JSON.stringify(
           Object.assign(user, {
             pox: position.x,
@@ -380,6 +424,11 @@ function animate() {
     users.forEach((user) => {
       // console.log(user);
       if (user.type === "player") {
+        if (user.nickname === "234234") {
+          console.log("있음");
+        } else {
+          console.log("없음");
+        }
         ctx.fillText(user.nickname, user.pox + 35 / 2, user.poy - 10);
         ctx.textAlign = "center";
         ctx.fillRect(user.pox, user.poy, 35, 35);
@@ -390,3 +439,5 @@ function animate() {
   requestAnimationFrame(animate);
 }
 requestAnimationFrame(animate);
+
+export default users;

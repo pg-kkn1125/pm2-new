@@ -37,7 +37,7 @@ class Channel {
     // console.log("close 때 확인", found);
     if (found) {
       found.delete(String(deviceID));
-      console.log(String(deviceID)+"번 사용자 삭-제!");
+      console.log(String(deviceID) + "번 사용자 삭-제!");
     }
   }
 

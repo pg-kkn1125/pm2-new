@@ -167,4 +167,4 @@ process.on("SIGINT", function () {
   });
 });
 
-module.exports = { app };
+module.exports = { app, declareProtobuf };
