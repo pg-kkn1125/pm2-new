@@ -12,6 +12,7 @@ const Protobuf = require("../model/Protobuf");
 const { User } = require("../model/User");
 const Channel = require("../model/Channel");
 const decoder = new TextDecoder();
+const pm2 = require("pm2");
 
 const channel = new Channel();
 let user = null;
@@ -28,6 +29,32 @@ const locationQueue = new Queue3();
 const stateQueue = new Queue2();
 const sockets = new Map();
 let wsBox = null;
+
+// for (let i = 1; i <= 50; i++) {
+//   console.log(i);
+//   stateQueue.enter(
+//     JSON.stringify({
+//       type: "player",
+//       id: i,
+//       device: "ios",
+//       authority: "host",
+//       avatar: "avatar1",
+//       pox: 500,
+//       poy: 300,
+//       poz: 0,
+//       roy: 5,
+//       state: "login",
+//       host: "https://localhost:3000",
+//       timestamp: "20220922",
+//       nickname: "test" + i,
+//       // ...(nickname && { nickname: nickname }),
+//     })
+//   );
+// }
+
+/**
+ * histogram
+ */
 
 emitter.on(`${SERVER_NAME + SERVER_COUNT}`, (app, ws, data) => {
   const [th, ch] = parseChannel(ws.params.channel);
@@ -49,28 +76,6 @@ emitter.on(`${SERVER_NAME + SERVER_COUNT}`, (app, ws, data) => {
   user.setDeviceID(sockets.get(ws).did);
   // 유저 데이터 저장
   channel.addUser(user);
-
-  for (let i = 1; i <= 50; i++) {
-    console.log(i);
-    stateQueue.enter(
-      JSON.stringify({
-        type: "player",
-        id: i,
-        device: "ios",
-        authority: "host",
-        avatar: "avatar1",
-        pox: 500,
-        poy: 300,
-        poz: 0,
-        roy: 5,
-        state: "login",
-        host: "https://localhost:3000",
-        timestamp: "20220922",
-        nickname: "test" + i,
-        // ...(nickname && { nickname: nickname }),
-      })
-    );
-  }
 
   app.publish(
     String(sockets.get(ws).did),
@@ -166,7 +171,7 @@ const sendLocation = setInterval(() => {
     }
   }
   if (locationQueue.count !== 0) {
-    console.log(sockets.get(wsBox).ch + ":: 로케이션 뿌림");
+    // console.log(sockets.get(wsBox).ch + ":: 로케이션 뿌림");
     // console.log(sockets.get(wsBox).ch);
     // app.publish(sockets.get(wsBox).ch, locationQueue.get(), true, true);
     app.publish(sockets.get(wsBox).ch, locationQueue.get(), true, true);
@@ -181,6 +186,20 @@ setTimeout(() => {
       app.publish(sockets.get(wsBox).ch, stateQueue.get());
     }
   }, 16);
+  setInterval(() => {
+    pm2.list((err, list) => {
+      if (err) {
+        console.log(err);
+      }
+      list.forEach((li) => {
+        if (li.name === "server1") {
+          // console.log(li.monit.cpu);
+          // console.log(li.monit.memory);
+          // console.log(li.pm2_env.status);
+        }
+      });
+    });
+  }, 100);
 }, 14);
 
 //ping

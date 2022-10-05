@@ -70,7 +70,9 @@ function connectOne(i) {
     .filter((p) => p)
     .map((p) => p.split("="));
   const params = Object.fromEntries(parameters);
-  ws = new WebSocket(`ws://localhost:3000/server?channel=server1${params.ch}`);
+  ws = new WebSocket(
+    `ws://localhost:3000/server?channel=server1${params.ch || "A"}`
+  );
   sockets.set(i || 0, ws);
   sockets.get(i || 0).binaryType = "arraybuffer";
   // setTimeout(() => {
@@ -424,11 +426,13 @@ function animate() {
     users.forEach((user) => {
       // console.log(user);
       if (user.type === "player") {
-        if (user.nickname === "234234") {
-          console.log("있음");
-        } else {
-          console.log("없음");
-        }
+        // if (user.nickname === "234234") {
+        //   console.log(users.length)
+        //   console.log("있음");
+        // } else {
+        //   console.warn(users.length)
+        //   // console.log("없음");
+        // }
         ctx.fillText(user.nickname, user.pox + 35 / 2, user.poy - 10);
         ctx.textAlign = "center";
         ctx.fillRect(user.pox, user.poy, 35, 35);

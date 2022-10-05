@@ -113,6 +113,7 @@ const app = uws
     if (socket) {
       process.send("ready");
       console.log(`server listening on ws://localhost:${PORT}/*`);
+      // emitter.emit("start");
     }
   });
 
